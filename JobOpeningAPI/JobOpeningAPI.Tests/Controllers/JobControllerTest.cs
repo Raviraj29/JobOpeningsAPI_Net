@@ -1,4 +1,5 @@
-﻿using JobOpeningAPI.Controllers;
+﻿using JobOpeningAPI.ApiResponse;
+using JobOpeningAPI.Controllers;
 using JobOpeningAPI.Models;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NSubstitute;
@@ -22,8 +23,9 @@ namespace JobOpeningAPI.Tests.Controllers
             JobController controller = new JobController();
             controller.Request = Substitute.For<HttpRequestMessage>();  // using nSubstitute
             controller.Configuration = Substitute.For<HttpConfiguration>();
+            JObList joblist = new JObList();
             // Act
-            HttpResponseMessage result = controller.GetJobs();
+            HttpResponseMessage result = controller.GetJobs(joblist);
 
             // Assert
             Assert.IsNotNull(result);

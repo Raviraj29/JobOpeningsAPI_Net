@@ -85,14 +85,22 @@ namespace JobOpeningAPI.Controllers
         {
             //var Job = dbContext.Jobs.Include(x => x.location).Include(x=>x.department).Where(x => x.JobId == id).FirstOrDefault<Job>();
             var Job = (from j in dbContext.Jobs
-                        join dept in dbContext.Departments on j.DepartmentId equals dept.DepartmentId
-                        join loca in dbContext.Locations on j.LocationId equals loca.LocationId
-                        where j.JobId == id
-                        select new
-                        {
-                            j.JobId, j.Code, j.JobTitle, j.Description, j.location, j.department, j.postedDate, j.closingDate
-                        }).ToList();
-            if(Job.Count > 0) {
+                       join dept in dbContext.Departments on j.DepartmentId equals dept.DepartmentId
+                       join loca in dbContext.Locations on j.LocationId equals loca.LocationId
+                       where j.JobId == id
+                       select new
+                       {
+                           j.JobId,
+                           j.Code,
+                           j.JobTitle,
+                           j.Description,
+                           j.location,
+                           j.department,
+                           j.postedDate,
+                           j.closingDate
+                       }).ToList();
+            if (Job.Count > 0)
+            {
 
                 return Request.CreateResponse(Job);
             }
@@ -101,25 +109,41 @@ namespace JobOpeningAPI.Controllers
 
         [Route("api/jobs/list")]
         [HttpGet()]
-        public HttpResponseMessage GetJobs()
+        public HttpResponseMessage GetJobs(JObList jObList)
         {
             JobApiResponse jobApiResponse = new JobApiResponse();
             var jobs = (from j in dbContext.Jobs
-                       select new
-                       {
-                           j.JobId,
-                           j.Code,
-                           j.JobTitle,
-                           j.LocationId,
-                           j.DepartmentId,
-                           j.postedDate,
-                           j.closingDate
-                       }).ToList();
+                        select new JobDTO
+                        {
+                            JobId = j.JobId,
+                            Code = j.Code,
+                            JobTitle = j.JobTitle,
+                            Location = j.location.LocationTitle,
+                            Department = j.department.DepartmentTitle,
+                            LocationId = j.LocationId,
+                            DepartmentId = j.DepartmentId,
+                            postedDate = j.postedDate,
+                            closingDate = j.closingDate
+                        }).ToList();
 
             if (jobs.Count > 0)
             {
+                if (jObList.LocationId != 0)
+                {
+                    jobs = jobs.Where(x => x.LocationId == jObList.LocationId).ToList();
+                }
+                if (jObList.DepartmentId != 0)
+                {
+                    jobs = jobs.Where(x => x.DepartmentId == jObList.DepartmentId).ToList();
+                }
+                jobApiResponse.total = jobs.Count;
+                var matchingvalues = jobs.Where(x => x.JobTitle.Contains(jObList.q) || x.JobId.ToString().Contains(jObList.q) || x.Code.Contains(jObList.q) || x.Location.Contains(jObList.q) || x.Department.Contains(jObList.q));
 
-                return Request.CreateResponse(jobs);
+                jobs = matchingvalues.Skip((jObList.pageNo - 1) * jObList.pageSize).Take(jObList.pageSize).ToList();
+
+                
+                jobApiResponse.data = jobs;
+                return Request.CreateResponse(jobApiResponse);
             }
             return Request.CreateResponse(HttpStatusCode.NotFound, (int)HttpStatusCode.NotFound + " " + HttpStatusCode.NotFound.ToString());
         }
